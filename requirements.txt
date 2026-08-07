@@ -1,1 +1,4 @@
-"# .gitignore" ; echo "# README.md" ; echo "# requirements.txt" 
+pytest
+python-dotenv
+pydantic
+openai
