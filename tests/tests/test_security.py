@@ -36,12 +36,11 @@ def tmp_storage(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_encrypt_decrypt_roundtrip():
-    original = b"Hello, Form Review Agent – confidential PDF bytes"
+    original = b"Hello, Form Review Agent - confidential PDF bytes"
     token = encrypt_bytes(original)
     assert token != original
     recovered = decrypt_bytes(token)
     assert recovered == original
-
 
 def test_decrypt_tampered_raises():
     original = b"secret data"
