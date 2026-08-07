@@ -22,6 +22,14 @@ ENV/
 secrets.txt
 api_keys.txt
 
+# Security – never commit keys or encrypted uploads
+secure_storage/
+*.key
+.master.key
+
+# Audit log created by main.py / routing.py
+audit_log.json
+
 # Testing
 .pytest_cache/
 .coverage
@@ -35,6 +43,6 @@ htmlcov/
 # Cline local files
 .cline/
 
-# OS files (safe to keep)
+# OS files
 .DS_Store
 Thumbs.db
