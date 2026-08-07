@@ -161,4 +161,4 @@ def test_save_encrypted_upload_happy_path(tmp_storage):
 
 def test_save_encrypted_upload_rejects_bad_type(tmp_storage):
     with pytest.raises(ValueError, match="not allowed"):
-        save_encrypted_upload("virus.exe", b"bad
+        save_encrypted_upload("virus.exe", b"bad", storage_dir=tmp_storage)
