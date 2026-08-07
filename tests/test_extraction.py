@@ -1,1 +1,65 @@
-import unittest from app.extraction import extract_fields class TestExtraction(unittest.TestCase): def test_complete_sample(self): text = """Name: John Doe Date of Birth: 1990-01-01 ID Number: 1234567890 Address: 123 Main St, Anytown, USA Income: 50000 Category: Employee""" expected_output = { 'name': 'John Doe', 'dob': '1990-01-01', 'id_number': '1234567890', 'address': '123 Main St, Anytown, USA', 'income': '50000', 'category': 'Employee' } self.assertEqual(extract_fields(text), expected_output) def test_missing_fields(self): text = """Name: Jane Doe Date of Birth: 1995-06-15 Address: 456 Elm St, Othertown, USA""" expected_output = { 'name': 'Jane Doe', 'dob': '1995-06-15', 'id_number': None, 'address': '456 Elm St, Othertown, USA', 'income': None, 'category': None } self.assertEqual(extract_fields(text), expected_output) def test_empty_input(self): text = "" expected_output = { 'name': None, 'dob': None, 'id_number': None, 'address': None, 'income': None, 'category': None } self.assertEqual(extract_fields(text), expected_output) if __name__ == '__main__': unittest.main()
+"""
+Field extraction module for the Form Processing Agent.
+
+This module extracts structured fields from raw, semi-structured text
+(such as text extracted from a PDF form) using pattern-based parsing.
+"""
+
+import re
+from typing import Optional, Dict
+
+
+def extract_fields(text: str) -> Dict[str, Optional[str]]:
+    """
+    Extract structured fields from raw form text.
+
+    Looks for lines in the format "Label: Value" and maps them to a
+    fixed set of expected keys. If a field is not found in the text,
+    its value is set to None rather than guessed.
+
+    Args:
+        text: Raw text extracted from a form or document (e.g. from a PDF).
+
+    Returns:
+        A dictionary with exactly these keys: name, dob, id_number,
+        address, income, category. Any field not found in the input
+        text will have a value of None.
+    """
+    fields: Dict[str, Optional[str]] = {
+        'name': None,
+        'dob': None,
+        'id_number': None,
+        'address': None,
+        'income': None,
+        'category': None,
+    }
+
+    if not text or not text.strip():
+        return fields
+
+    # Maps the labels that may appear in the text to our output keys
+    label_map = {
+        'name': 'name',
+        'date of birth': 'dob',
+        'dob': 'dob',
+        'id number': 'id_number',
+        'id no': 'id_number',
+        'address': 'address',
+        'income': 'income',
+        'category': 'category',
+    }
+
+    lines = text.split('\n')
+    for line in lines:
+        line = line.strip()
+        if not line or ':' not in line:
+            continue
+
+        label, _, value = line.partition(':')
+        label = label.strip().lower()
+        value = value.strip()
+
+        if label in label_map and value:
+            fields[label_map[label]] = value
+
+    return fields
