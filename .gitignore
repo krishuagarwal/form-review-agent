@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment & API Keys (IMPORTANT)
+.env
+*.env
+.env.*
+secrets.txt
+api_keys.txt
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Cline local files
+.cline/
+
+# OS files (safe to keep)
+.DS_Store
+Thumbs.db
