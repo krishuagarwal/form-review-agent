@@ -1,0 +1,33 @@
+# Form Review Agent — Cline Rules
+
+You are working on the **form-review-agent** project for the Deploy or Die Hackathon.
+
+## Core Principles
+- Always stay in Plan mode first. Explain what you will do before writing any code.
+- Prefer small, focused changes. Never rewrite entire files unless explicitly asked.
+- Always use type hints and docstrings on every function.
+- Never invent data. If a field cannot be extracted confidently, leave it as `None` or empty string and note it.
+- Keep the human in the loop: flag anything uncertain for review instead of auto-approving.
+
+## Project Structure
+- `app/extraction.py` → field extraction
+- `app/verification.py` → missing fields + cross-document checks
+- `app/routing.py` → risk score, routing decision, audit log
+- `tests/` → pytest tests for every module
+- All public functions must be pure or clearly side-effect documented.
+
+## Coding Rules
+- Python 3.10+
+- Use only standard library + any packages already in `requirements.txt`
+- Return structured dicts / lists — never free-form strings for data
+- Every function must have a corresponding test
+- After writing code, always run the relevant tests and fix failures
+
+## Git Discipline
+- After finishing a task: `git add .` → `git commit -m "clear message"` → `git push`
+- Always `git pull` before starting new work
+
+## Response Style
+- Be concise.
+- Show the exact files you create or modify.
+- End with a short summary of what was done and what the next human should check.
