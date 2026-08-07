@@ -5,7 +5,6 @@ import stat
 from pathlib import Path
 
 import pytest
-from cryptography.fernet import Fernet
 
 from app.security import (
     encrypt_bytes,
@@ -21,22 +20,14 @@ from app.security import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture
 def tmp_storage(tmp_path):
     """Temporary directory used instead of real secure_storage/."""
     return tmp_path / "secure_storage"
 
 
-# ---------------------------------------------------------------------------
-# 1. Encryption round-trip
-# ---------------------------------------------------------------------------
-
 def test_encrypt_decrypt_roundtrip():
-    original = b"Hello, Form Review Agent - confidential PDF bytes"
+    original = b"Hello Form Review Agent confidential PDF bytes"
     token = encrypt_bytes(original)
     assert token != original
     recovered = decrypt_bytes(token)
@@ -46,19 +37,14 @@ def test_encrypt_decrypt_roundtrip():
 def test_decrypt_tampered_raises():
     original = b"secret data"
     token = encrypt_bytes(original)
-    # Flip one byte to simulate tampering
     tampered = token[:-1] + bytes([(token[-1] + 1) % 256])
     with pytest.raises(ValueError, match="integrity check"):
         decrypt_bytes(tampered)
 
 
-# ---------------------------------------------------------------------------
-# 2. Upload validation
-# ---------------------------------------------------------------------------
-
 def test_validate_upload_allowed_extensions():
     for ext in ALLOWED_EXTENSIONS:
-        validate_upload(f"document{ext}", 1024)  # should not raise
+        validate_upload(f"document{ext}", 1024)
 
 
 def test_validate_upload_rejects_bad_extension():
@@ -76,16 +62,12 @@ def test_validate_upload_rejects_too_large():
         validate_upload("big.pdf", MAX_FILE_SIZE_BYTES + 1)
 
 
-# ---------------------------------------------------------------------------
-# 3. Secure filenames
-# ---------------------------------------------------------------------------
-
 def test_generate_secure_filename_keeps_extension():
     name = generate_secure_filename("Rahul_Aadhaar_scan.pdf")
     assert name.endswith(".pdf")
     assert "Rahul" not in name
     assert "Aadhaar" not in name
-    assert len(name) > 10  # random token is long
+    assert len(name) > 10
 
 
 def test_generate_secure_filename_blocks_path_traversal():
@@ -97,12 +79,8 @@ def test_generate_secure_filename_blocks_path_traversal():
 
 def test_generate_secure_filename_unique():
     names = {generate_secure_filename("doc.pdf") for _ in range(20)}
-    assert len(names) == 20  # all unique
+    assert len(names) == 20
 
-
-# ---------------------------------------------------------------------------
-# 4. API-key check
-# ---------------------------------------------------------------------------
 
 def test_is_valid_api_key_correct(monkeypatch):
     monkeypatch.setenv("FORM_AGENT_API_KEY", "super-secret-key-123")
@@ -122,10 +100,6 @@ def test_is_valid_api_key_missing_env(monkeypatch):
 def test_is_valid_api_key_none():
     assert is_valid_api_key(None) is False
 
-
-# ---------------------------------------------------------------------------
-# 5. PII redaction
-# ---------------------------------------------------------------------------
 
 def test_redact_aadhaar():
     text = "Aadhaar number is 1234 5678 9012"
@@ -156,10 +130,6 @@ def test_redact_leaves_safe_text():
     assert redact_pii(text) == text
 
 
-# ---------------------------------------------------------------------------
-# 6. Safe logger
-# ---------------------------------------------------------------------------
-
 def test_get_safe_logger_redacts(capsys):
     logger = get_safe_logger("test_security_logger")
     logger.info("User Aadhaar 1234 5678 9012 submitted form")
@@ -168,10 +138,6 @@ def test_get_safe_logger_redacts(capsys):
     assert "[REDACTED]" in captured.err or "[REDACTED]" in captured.out
 
 
-# ---------------------------------------------------------------------------
-# 7. High-level save_encrypted_upload
-# ---------------------------------------------------------------------------
-
 def test_save_encrypted_upload_happy_path(tmp_storage):
     content = b"%PDF-1.4 fake form content"
     path = save_encrypted_upload("applicant_form.pdf", content, storage_dir=tmp_storage)
@@ -179,16 +145,13 @@ def test_save_encrypted_upload_happy_path(tmp_storage):
     assert path.exists()
     assert path.parent == tmp_storage
     assert path.suffix == ".pdf"
-    assert "applicant" not in path.name  # original name not used
+    assert "applicant" not in path.name
 
-    # File should be encrypted (not equal to original bytes)
     assert path.read_bytes() != content
 
-    # Round-trip decrypt works
     recovered = decrypt_bytes(path.read_bytes())
     assert recovered == content
 
-    # Permissions should be owner-only (0600)
     mode = path.stat().st_mode
     assert mode & stat.S_IRUSR
     assert mode & stat.S_IWUSR
@@ -198,4 +161,4 @@ def test_save_encrypted_upload_happy_path(tmp_storage):
 
 def test_save_encrypted_upload_rejects_bad_type(tmp_storage):
     with pytest.raises(ValueError, match="not allowed"):
-        save_encrypted_upload("virus.exe", b"bad", storage_dir=tmp_storage)
+        save_encrypted_upload("virus.exe", b"bad
