@@ -2,3 +2,4 @@ pytest
 python-dotenv
 pydantic
 openai
+cryptography>=42.0.0
