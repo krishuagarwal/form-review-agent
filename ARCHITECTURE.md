@@ -1,199 +1,196 @@
-# Architecture — DocDesk (Form Review Agent)
+# 📄 DocDesk — AI Form & Document Review Agent
 
-*Deploy or Die — HowToAlgo x GDG on Campus KIIT Hackathon | Track A: Business Process Automation*
+**Deploy or Die — HowToAlgo x GDG on Campus KIIT Hackathon**
+**Track A: Business Process Automation**
 
----
+> Know exactly which documents you need — before you queue up.
 
-## 1. Overview
+DocDesk is an agent-driven system that takes a government/institutional application (Aadhaar, PAN, Passport, Bank Account Opening, Driving License, Voter ID) along with its supporting documents, and automatically extracts the required fields, detects missing information, cross-checks details across documents, flags expired or duplicate documents, calculates a risk score, and routes incomplete or suspicious cases to a human reviewer — with every decision logged and fully traceable.
 
-DocDesk is an agent-driven system that takes a government/institutional application (Aadhaar, PAN, Passport, Bank Account Opening, Driving License, Voter ID) plus its supporting documents, and determines whether the application is **"Ready for Approval"** or **"Needs Review"** — with a clear, traceable reason attached to every decision. A human reviewer always makes the final call; the system only extracts, verifies, scores, and routes.
-
----
-
-## 2. Design Principles
-
-The full reasoning behind these lives in [`constitution.md`](./constitution.md). In summary:
-
-- The agent never makes a final approve/reject decision — only flags and routes
-- Every decision is logged with a timestamp and reason — nothing happens silently
-- Uncertain fields return `None`, never a guessed value
-- Modules are loosely coupled so requirements can change without breaking the system
-- When in doubt, fail toward "Needs Review," not toward silent approval
+**The agent never approves or rejects on its own.** It flags, explains, and routes. A human always makes the final call.
 
 ---
 
-## 3. Tech Stack
+## 🎯 The Problem
 
-| Layer | Choice | Why |
+Manual processing of government scheme, subsidy, and institutional forms is slow, inconsistent, and error-prone. Genuinely eligible applicants are frequently rejected or delayed — not because they're ineligible, but because a document was missing, mismatched, expired, or reused across applications, and nobody caught it early. This is a real, large-scale, unsolved operational problem, not an invented hackathon scenario.
+
+---
+
+## ✨ Core Features
+
+| Feature | Module | Description |
 |---|---|---|
-| Language | Python 3.11+ | Team familiarity, strong text-processing ecosystem |
-| Coding Agent | Cline (VS Code) | Human-approved, step-by-step agent execution |
-| AI Backend | Groq / NVIDIA Build (OpenAI-compatible) | Free tier, fast inference, swappable via one interface |
-| Encryption | `cryptography` (Fernet/AES) | Industry-standard symmetric encryption for files at rest |
-| Config | `python-dotenv`, `pydantic` | Safe environment variable handling and data validation |
-| Testing | `pytest` | Simple, widely supported, integrates cleanly with CI |
-| CI/CD | GitHub Actions | Free for public repos, native GitHub integration |
-| Frontend | Lightweight web UI ("DocDesk") | Category picker → checklist → upload → review, no heavy framework needed |
+| **Field Extraction** | `extraction.py` | Deterministic, rule-based extraction of name, DOB, ID number, address, income, and category from raw document text |
+| **Missing Field Detection** | `verification.py` | Checks extracted data against the required-fields checklist for the selected category |
+| **Cross-Document Verification** | `verification.py`, `cross_check_engine.py` | Compares fields across every document uploaded for an application and flags mismatches with the exact discrepancy |
+| **Duplicate Upload Detection** | `duplicate_detection.py` | Hashes every file (SHA-256) — flags if the same file appears under a different application ID |
+| **Expiry Detection** | `expiry_detection.py` | For Passport, Driving License, and Voter ID, flags documents that are expired or expiring within 30 days |
+| **Risk Scoring & Routing** | `routing.py` | Scores each application and routes it to "Ready for Approval" or "Needs Review" with a clear reason |
+| **AI Review Summary** | `ai_review_summary.py` | Generates a human-readable summary for the reviewer, built strictly from already-computed structured results |
+| **Decision & Audit Log** | `routing.py` | Every action is logged with a timestamp, giving a full traceable history per application |
+| **Pipeline Orchestration** | `pipeline_integration.py` | Wires every module above into a single end-to-end flow triggered on each upload |
+| **Security Layer** | `security.py` | Encrypts files at rest, randomizes stored filenames, enforces API key access, and redacts PII from logs |
 
 ---
 
-## 4. High-Level Data Flow 
-┌─────────────────────┐
-                 │   User selects a     │
-                 │  document category   │
-                 └──────────┬───────────┘
-                            │
-                 ┌──────────▼───────────┐
-                 │  Official checklist   │
-                 │   shown to user       │
-                 └──────────┬───────────┘
-                            │
-                 ┌──────────▼───────────┐
-                 │  Documents uploaded    │
-                 │  (encrypted at rest)   │
-                 └──────────┬───────────┘
-                            │
-          ┌─────────────────┼─────────────────┐
-          ▼                                     ▼
-          ┌─────────────────────┐ ┌─────────────────────┐
-│ Field Extraction │ │ Auto Cross-Check │
-│ (extraction.py) │──────────────▶ on Upload │
-│ extract_fields() │ │ (verification.py) │
-└──────────┬───────────┘ └──────────┬───────────┘
-│ │
-▼ ▼
-┌─────────────────────┐ ┌─────────────────────┐
-│ Missing Field Check │ │ Cross-Document │
-│ (verification.py) │ │ Verification │
-│ check_missing_fields()│ │ cross_check_documents()│
-└──────────┬───────────┘ └──────────┬───────────┘
-│ │
-└──────────────────┬────────────────────┘
+## 🏗️ Architecture 
+Upload (form + documents)
+│
 ▼
-┌─────────────────────┐
-│ Risk Scoring & │
-│ Routing │
-│ (routing.py) │
-│ calculate_risk_and_ │
-│ route() │
-└──────────┬───────────┘
+Duplicate Check ── flags reused documents across applications
 │
-┌──────────▼───────────┐
-│ AI Review Summary │
-│ (generated from │
-│ structured results │
-│ only — never a new │
-│ source of truth) │
-└──────────┬───────────┘
+▼
+Field Extraction + Cross-Document Check ── extracts & compares against
+│ everything already on file
+▼
+Expiry Check ── for Passport / Driving License / Voter ID
 │
-┌──────────▼───────────┐
-│ Decision & Audit Log │
-│ (routing.py) │
-│ log_decision() │
-│ get_history() │
-└──────────┬───────────┘
+▼
+Risk Scoring & Routing ── Ready for Approval / Needs Review + reason
 │
-┌──────────▼───────────┐
-│ Output: Ready for │
-│ Approval / Needs │
-│ Review + reason │
-└─────────────────────┘
----
-
-## 5. Module Breakdown
-
-### 5.1 `app/extraction.py` — Field Extraction
-**Custom Agent: Form Field Extractor**
-
-- `extract_fields(text: str) -> dict` — parses raw form/document text and returns a dictionary with exactly these keys: `name`, `dob`, `id_number`, `address`, `income`, `category`
-- Uses deterministic, rule-based label parsing (`"Label: Value"` pattern matching) rather than a live AI call for this core function — this was a deliberate design decision (see §8) to keep extraction fast, reliable, and 100% reproducible in CI
-- Any field not found in the source text is returned as `None` — never guessed
-
-### 5.2 `app/verification.py` — Verification
-**Custom Skill: Cross-Document Verifier**
-
-- `check_missing_fields(fields_dict, required_fields_list) -> list` — returns which required fields are missing or blank for the selected document category
-- `cross_check_documents(fields_dict_1, fields_dict_2) -> list` — compares fields (name, DOB) across two documents, returning human-readable mismatch messages (e.g. *"Name mismatch: form says 'Krishu Sharma', ID says 'Krishu S.'"*)
-- **Auto cross-check on upload (planned extension):** wires `extract_fields()` directly into the upload flow, so the moment a document is uploaded, its fields are extracted and immediately cross-checked against the rest of the application — turning "did they upload something" into "does what they uploaded actually match"
-
-### 5.3 `app/routing.py` — Risk Scoring, Routing & Audit
-- `calculate_risk_and_route(missing_fields_list, mismatches_list) -> dict` — counts issues and assigns a risk level (0 issues = low, 1–2 = medium, 3+ = high), returning `"Ready for Approval"` or `"Needs Review"` with the reason
-- `log_decision(application_id, action, reason)` — records every action (auto-flag, human approve/reject/resubmit) with a timestamp
-- `get_history(application_id) -> list` — returns the full, ordered decision history for one application
-- **AI-generated review summary (planned extension):** once all required documents are present, the AI backend generates a single human-readable paragraph (e.g. *"All 4 required docs present, DOB matches across documents, risk: low"*) built strictly from the already-computed structured results — never an independent source of truth (Constitution, Principle 8)
-
-### 5.4 `app/security.py` — Security Layer
-- File encryption at rest using Fernet/AES; the encryption key is stored outside the codebase (environment variable / secrets manager)
-- Uploaded files are renamed to random tokens on storage — original filenames are never persisted, preventing path traversal or metadata leakage
-- Every API route requires an `X-API-Key` header, checked via constant-time comparison to prevent timing attacks
-- Upload validation restricts file types to PDF/JPG/PNG and caps size at 10 MB
-- PII-safe logging: the logger auto-redacts Aadhaar, PAN, phone, and email patterns before anything is written to disk
-
-### 5.5 Frontend — DocDesk UI
-- Category selector (Aadhaar, PAN, Passport, Bank Account Opening, Driving License, Voter ID)
-- Displays the official checklist and accepted proof types per category
-- File upload with drag-and-drop, connected to the encrypted storage pipeline
-- "Run review" triggers the full backend pipeline and displays the completeness/risk result
-- A "Play the demo" mode runs the flow against sample files with no real upload, for safe live demonstration
-
-### 5.6 `main.py` — Pipeline Orchestration
-Connects all modules end-to-end: extract → verify → cross-check → score & route → log. Runs against three demo scenarios (clean, missing-field, mismatch) to validate the full pipeline in one command.
+▼
+AI Review Summary ── generated from the structured results above,
+│ never an independent source of truth
+▼
+Decision & Audit Log ── timestamped, reasoned, fully traceable 
+Full design decisions and trade-offs are documented in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ---
 
-## 6. Data Contract
+## 🤖 Custom Agent & Skill
 
-To let 4 team members build independent modules in parallel without integration conflicts, every function that produces or consumes extracted fields uses this exact dictionary shape, agreed on before any feature code was written:
+| Type | Name | Purpose |
+|---|---|---|
+| **Custom Agent** | Form Field Extractor | Reads raw, messy document text and returns structured field data |
+| **Custom Skill** | Cross-Document Verifier | Compares field values across two or more documents and flags mismatches with human-readable reasons |
 
-```python
-{
-    "name": str | None,
-    "dob": str | None,
-    "id_number": str | None,
-    "address": str | None,
-    "income": str | None,
-    "category": str | None
-}
+Full documentation: [`AGENTS_AND_SKILLS.md`](./AGENTS_AND_SKILLS.md)
+Agent behavior rules: [`.clinerules`](./.clinerules) · [`AGENTS.md`](./AGENTS.md) · [`constitution.md`](./constitution.md)
+
+---
+
+## 🛠️ Tech Stack
+
+- **Language:** Python 3.11+
+- **Coding Agent:** Cline (VS Code)
+- **AI Backend:** Groq / NVIDIA Build (OpenAI-compatible)
+- **Security:** `cryptography` (Fernet/AES)
+- **Config:** `python-dotenv`, `pydantic`
+- **Testing:** `pytest`
+- **CI/CD:** GitHub Actions
+
+---
+
+## 📁 Project Structure
+form-review-agent/
+├── app/
+│ ├── init.py
+│ ├── extraction.py
+│ ├── verification.py
+│ ├── routing.py
+│ ├── security.py
+│ ├── duplicate_detection.py
+│ ├── expiry_detection.py
+│ ├── cross_check_engine.py
+│ ├── ai_review_summary.py
+│ └── pipeline_integration.py
+├── tests/
+│ └── (one test file per module)
+├── .github/workflows/ci.yml
+├── .clinerules
+├── .gitignore
+├── AGENTS.md
+├── AGENTS_AND_SKILLS.md
+├── ARCHITECTURE.md
+├── constitution.md
+├── main.py
+├── requirements.txt
+└── README.md 
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/krishuagarwal/form-review-agent.git
+cd form-review-agent
+```
+
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Set up environment variables
+Create a `.env` file in the project root (this is git-ignored, never commit it): 
+
+NVDIA KEY-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 
+### 4. Run the full pipeline
+```bash
+python main.py
+```
+This runs sample applications through the complete pipeline — extraction, verification, duplicate check, expiry check, risk scoring, and audit logging — and prints the results.
+
+### 5. Run the tests
+```bash
+pytest -v
 ```
 
 ---
 
-## 7. What's Deliberately Out of Scope (MVP Boundaries)
+## ✅ Testing
 
-Documented honestly rather than silently ignored:
+The test suite covers, per module:
+- A clean/complete case
+- A missing-field or edge case
+- Invalid/empty input handling
+- Security round-trip encryption/decryption
+- Duplicate detection across applications
+- Expiry status (valid / expiring soon / expired / unknown)
+- AI summary generation from structured data
 
-- **Fraud/suspicious-pattern detection** — too fuzzy to build reliably within a one-day build; see Roadmap
-- **OCR for handwritten/scanned forms** — the MVP works on typed/text-extractable PDFs; handwriting recognition needs more validation time than available
-- **Final approval/rejection authority** — by design, the system never holds this authority; a human always does
+Run locally before every push:
+```bash
+pytest -v
+```
 
----
-
-## 8. Key Design Decisions & Trade-offs
-
-**Why rule-based extraction instead of a live AI call inside `extract_fields()`?**
-An earlier version called an AI model directly inside the extraction function. This made tests flaky — the same input could produce slightly different output between runs (different phrasing, casing, whitespace), which is unacceptable for a function whose output feeds directly into verification and risk scoring. Switching to deterministic label-pattern parsing made the function 100% reproducible, faster, and reliable in CI, at the cost of not handling wildly unstructured or handwritten input — an explicit, documented trade-off, not an oversight.
-
-**Why keep AI-generated summaries separate from the decision logic?**
-It would be tempting to let an AI model directly decide "Ready for Approval" vs "Needs Review." We deliberately did not do this. The AI summary is generated *after* and *from* the structured, deterministic risk-scoring output — never the other way around — so a hallucinated summary can never change an actual routing decision (Constitution, Principle 8).
-
-**Why loosely couple extraction, verification, and routing?**
-Each module only depends on the shared data contract (§6), not on each other's internals. This was a deliberate choice to survive the hackathon's Day 2 "surprise requirement" — a new field or check can be added to one module without needing to touch or retest the others.
+CI runs the full suite automatically on every push via [`.github/workflows/ci.yml`](./.github/workflows/ci.yml). All modules are fully deterministic — no test depends on live AI output or network access, so CI results are reliable and reproducible every time.
 
 ---
 
-## 9. Roadmap
+## 🔒 How Files Are Protected
 
-Planned but not yet built — see [`constitution.md`](./constitution.md) for the governing principles behind these:
-
-1. **Auto expiry-date detection** — for documents like Passport or Driving License, extract the expiry date during processing and automatically flag "expires in 20 days" or reject if already expired
-2. **Auto status notifications** — when an application's status changes (Incomplete → Complete, or a risk score changes), automatically fire an email/webhook notification instead of requiring the applicant to check manually
-3. **Duplicate-upload / fraud detection** — hash every uploaded file (SHA-256) before storing it; if the same hash appears under a different application ID, automatically flag it as possible document reuse
+- **Encryption at rest** — every uploaded file is encrypted with Fernet/AES before it touches disk
+- **No original filenames** — uploads are renamed to a random token, preventing path traversal or metadata leaks
+- **API key access control** — every route requires an `X-API-Key` header, verified with a constant-time comparison
+- **PII-safe logging** — Aadhaar, PAN, phone, and email patterns are auto-redacted before anything is written to logs
+- **Upload validation** — only PDF, JPG, and PNG accepted, capped at 10 MB
 
 ---
 
-## 10. Testing Strategy
+## 🗺️ Roadmap
 
-- Every module ships with unit tests covering: a complete/clean case, a missing-field case, a mismatch case, and empty/garbage input
-- Security module includes dedicated encryption/decryption round-trip tests
-- All tests run automatically in CI (`.github/workflows/ci.yml`) on every push
-- Local verification before every push: `pytest -v`
+Documented transparently as planned, not yet built:
+
+1. **Auto notifications** — fire an email/webhook automatically when an application's status changes from "Incomplete" to "Complete," or its risk score changes
+2. **Live AI backend for review summaries** — plug a real LLM call into `ai_review_summary.py` (currently template-based by default) for richer natural-language summaries, while keeping the structured data as the source of truth
+3. **OCR support** — extend `extraction.py` to handle scanned/handwritten documents, not just typed/text-extractable input
+
+We deliberately did not build general fraud-pattern detection or OCR in the MVP — both require more validation time than a one-day build allows, and are documented here as honest, known limitations rather than left unaddressed.
+
+---
+
+## 👥 Team
+
+Built by a 4-person team for the Deploy or Die hackathon:
+- **Field Extraction**
+- **Missing Field & Cross-Document Verification**
+- **Risk Scoring, Routing & Audit Logging**
+- **CI/CD, Security, Pipeline Integration & Documentation**
+
+---
+
+## 📄 License
+
+Built for educational/hackathon purposes as part of Deploy or Die — HowToAlgo x GDG on Campus KIIT.
