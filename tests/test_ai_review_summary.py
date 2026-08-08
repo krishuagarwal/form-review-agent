@@ -1,5 +1,4 @@
-from ai_review_summary import ReviewSummaryGenerator, build_application_data
-
+from app.ai_review_summary import ReviewSummaryGenerator, build_application_data
 
 def test_complete_clean_application_summary():
     assert "LOW" in summary
