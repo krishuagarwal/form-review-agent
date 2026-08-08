@@ -1,33 +1,42 @@
-# Form Review Agent — Cline Rules
+# .clinerules — Form Review Agent (DocDesk)
 
-You are working on the **form-review-agent** project for the Deploy or Die Hackathon.
+Rules Cline must follow while working in this repository.
 
-## Core Principles
-- Always stay in Plan mode first. Explain what you will do before writing any code.
-- Prefer small, focused changes. Never rewrite entire files unless explicitly asked.
-- Always use type hints and docstrings on every function.
-- Never invent data. If a field cannot be extracted confidently, leave it as `None` or empty string and note it.
-- Keep the human in the loop: flag anything uncertain for review instead of auto-approving.
+## Before Acting
+- Always propose a plan and wait for approval before creating or editing files (Plan mode → confirm → Act mode).
+- Confirm the exact function signature, inputs, and outputs before writing any new function.
+- Never assume a field name — the project's data contract uses exactly: `name`, `dob`, `id_number`, `address`, `income`, `category`. Do not rename or add keys without flagging it first.
 
-## Project Structure
-- `app/extraction.py` → field extraction
-- `app/verification.py` → missing fields + cross-document checks
-- `app/routing.py` → risk score, routing decision, audit log
-- `tests/` → pytest tests for every module
-- All public functions must be pure or clearly side-effect documented.
+## Code Standards
+- Every function must have type hints and a docstring.
+- Every new function ships with at least one pytest test file in `tests/`, covering a normal case and an edge case.
+- Prefer deterministic, rule-based logic over live AI calls inside core decision functions (extraction, verification, risk scoring, routing). AI calls are only used to generate human-readable summaries **from** already-computed structured data — never to produce the structured data itself.
+- If a value can't be confidently determined, return `None`. Never guess or invent a value.
+- Keep functions small and single-purpose. Split anything doing more than one clearly describable thing.
 
-## Coding Rules
-- Python 3.10+
-- Use only standard library + any packages already in `requirements.txt`
-- Return structured dicts / lists — never free-form strings for data
-- Every function must have a corresponding test
-- After writing code, always run the relevant tests and fix failures
+## File Ownership (do not cross-edit without being asked)
+- `app/extraction.py` — field extraction (Custom Agent: Form Field Extractor)
+- `app/verification.py` — missing field + cross-document checks (Custom Skill: Cross-Document Verifier)
+- `app/routing.py` — risk scoring, routing, decision logging, audit history
+- `app/security.py` — encryption, file handling, API key auth, PII-safe logging
+- `app/duplicate_detection.py` — SHA-256 file hash duplicate detection
+- `app/expiry_detection.py` — document expiry date checking
+- `app/cross_check_engine.py` — stateful per-application extraction + cross-check tracking
+- `app/ai_review_summary.py` — human-readable reviewer summaries (template-based by default)
+- `app/pipeline_integration.py` — wires all modules into one end-to-end flow
+- `main.py` — pipeline orchestration entry point / demo runner
 
-## Git Discipline
-- After finishing a task: `git add .` → `git commit -m "clear message"` → `git push`
-- Always `git pull` before starting new work
+## Testing
+- Run `pytest -v` locally before any commit is suggested.
+- Tests must be fully deterministic — never depend on live AI model output that could vary between runs.
+- Never weaken, skip, or delete a test just to make CI pass.
 
-## Response Style
-- Be concise.
-- Show the exact files you create or modify.
-- End with a short summary of what was done and what the next human should check.
+## Git
+- Commit messages are short and specific about *what* changed, not generic ("add X" not "update code").
+- Never commit `.env`, encryption keys, or anything listed in `.gitignore`.
+- One logical change per commit where practical.
+
+## Absolute Boundaries
+- Never make the final approve/reject decision on an application — the system only flags and routes; a human decides.
+- Never fabricate a test result or claim code works without having actually run the tests.
+- Never bypass the security layer (encryption, API key checks), even temporarily, for convenience.
