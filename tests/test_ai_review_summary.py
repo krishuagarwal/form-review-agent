@@ -1,6 +1,21 @@
 from app.ai_review_summary import ReviewSummaryGenerator, build_application_data
 
+
 def test_complete_clean_application_summary():
+    data = build_application_data(
+        application_id="APP-001",
+        required_doc_types=["Aadhaar", "Passport"],
+        present_doc_types=["Aadhaar", "Passport"],
+        cross_check_result={"all_match": True, "mismatches": []},
+        expiry_results=[],
+        duplicate_flag=False,
+        risk_score=0,
+        risk_label="LOW",
+    )
+    generator = ReviewSummaryGenerator()
+    summary = generator.generate_summary("APP-001", data)
+    assert "2/2" in summary
+    assert "match" in summary.lower()
     assert "LOW" in summary
 
 
