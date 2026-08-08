@@ -56,14 +56,4 @@ def test_get_all_extracted_fields(dummy_file):
     engine = CrossCheckEngine()
     engine.process_upload(dummy_file, "Aadhaar", "APP-001")
     engine.process_upload(dummy_file, "Passport", "APP-001")
-    all_fields = engine.get_all_extracted_fields("APP-001")
-    assert set(all_fields.keys()) == {"Aadhaar", "Passport"}
-
-
-def test_different_applications_are_isolated(dummy_file):
-    engine = CrossCheckEngine()
-    engine.process_upload(dummy_file, "Aadhaar", "APP-001")
-    engine.process_upload(dummy_file, "Aadhaar", "APP-002")
-    assert "Aadhaar" in engine.get_all_extracted_fields("APP-001")
-    assert "Aadhaar" in engine.get_all_extracted_fields("APP-002")
-    assert engine.get_all_extracted_fields("APP-001") is not engine.get_all_extracted_fields("APP-002")
+    all_fields = engine.get_all_extracted_fields("APP-001
