@@ -1,6 +1,5 @@
 from datetime import date, timedelta
-from expiry_detection import ExpiryChecker
-
+from app.expiry_detection import ExpiryChecker
 
 def _future_date_str(days_ahead: int) -> str:
     return (date.today() + timedelta(days=days_ahead)).strftime("%d/%m/%Y")
