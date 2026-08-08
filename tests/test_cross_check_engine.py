@@ -1,8 +1,8 @@
 import os
 import tempfile
 import pytest
-import cross_check_engine as cce
-from cross_check_engine import CrossCheckEngine
+import app.cross_check_engine as cce
+from app.cross_check_engine import CrossCheckEngine
 
 
 @pytest.fixture(autouse=True)
