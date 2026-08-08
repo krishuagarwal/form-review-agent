@@ -1,7 +1,7 @@
 import os
 import tempfile
 import pytest
-from duplicate_detection import DuplicateDetector
+from app.duplicate_detection import DuplicateDetector
 
 
 @pytest.fixture
