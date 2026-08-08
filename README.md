@@ -48,6 +48,31 @@ Full design decisions and reasoning are documented in [`ARCHITECTURE.md`](./ARCH
 
 ---
 
+
+
+Upload (form + documents)
+│
+▼
+PDF / Text Extraction
+│
+▼
+Field Extractor Agent (app/extraction.py)
+│
+▼
+Missing Field Checker (app/verification.py)
+│
+▼
+Cross-Document Verifier Skill (app/verification.py)
+│
+▼
+Risk Scoring & Routing (app/routing.py)
+│
+▼
+Decision & Audit Log (app/routing.py)
+│
+▼
+Output: "Ready for Approval" or "Needs Review" + reason
+
 ## 🤖 Custom Agent & Skill
 
 | Type | Name | Purpose |
