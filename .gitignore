@@ -1,48 +1,50 @@
+# Environment & secrets
+.env
+.env.local
+*.key
+secrets/
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+build/
+dist/
 *.egg-info/
 .eggs/
-dist/
-build/
 
 # Virtual environments
-.venv/
 venv/
 env/
 ENV/
+.venv/
 
-# Environment & API Keys (IMPORTANT)
-.env
-*.env
-.env.*
-secrets.txt
-api_keys.txt
-
-# Security – never commit keys or encrypted uploads
-secure_storage/
-*.key
-.master.key
-
-# Audit log created by main.py / routing.py
-audit_log.json
-
-# Testing
+# Testing & coverage
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 
-# VS Code
+# IDE / Editor
 .vscode/
-*.code-workspace
-
-# Cline local files
-.cline/
+.idea/
+*.swp
+*.swo
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Uploaded documents (never commit real user documents)
+uploads/
+encrypted_storage/
+
+# Local audit log files (if stored as flat files)
+audit_log.json
+*.local.json
